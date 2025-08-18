@@ -1,4 +1,6 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
+
 import React from "react";
 import Section from "@/components/admin/Section";
 import { useDB } from "@/lib/mockDb";
@@ -13,27 +15,18 @@ import {
 import type { User } from "@/lib/types";
 import { addMinutes, addDays } from "date-fns";
 
-import {
-    AdminCardTable,
-    Table,
-    TableBody,
-    TableCell,
-    TableHeader,
-    TableRow,
-    UserCell,
-    useHeaderCheckbox,
-} from "@/components/admin/common/AdminCardTable";
-
-/** helper */
+/** helper: อ่าน checked ก่อน แล้วค่อยอัปเดต selection (กัน event recycle) */
 const handleCheck =
     (id: string, setSel: React.Dispatch<React.SetStateAction<SelectionState>>) =>
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            setSel((s) => toggleOne(id, e.currentTarget.checked, s));
+            const checked = e.target.checked;
+            setSel((s) => toggleOne(id, checked, s));
         };
 
 export default function BanManager() {
     const { users, groups, bans, banMany, unban, unbanMany } = useDB();
 
+    // id -> group name
     const groupNameById = React.useMemo(
         () => new Map(groups.map((g) => [g.id, g.name] as const)),
         [groups],
@@ -42,18 +35,20 @@ export default function BanManager() {
     /* ---------------- LEFT: Search/Filter Users ---------------- */
     const [q, setQ] = React.useState<string>("");
     const [domain, setDomain] = React.useState<string | undefined>();
-    const [groupFilter, setGroupFilter] = React.useState<string>("");
-    const [selLeft, setSelLeft] = React.useState<SelectionState>(clearSelection());
+    const [groupFilter, setGroupFilter] = React.useState<string>(""); // "" = All groups
+    const [selLeft, setSelLeft] =
+        React.useState<SelectionState>(clearSelection());
 
     const filteredUsers: User[] = React.useMemo(() => {
         const qq = q.trim().toLowerCase();
         const out: User[] = [];
         for (let i = 0; i < users.length; i++) {
             const u = users[i];
-            if (groupFilter && !u.groups.includes(groupFilter)) continue;
-            if (domain && !u.email.toLowerCase().endsWith(domain)) continue;
+            if (groupFilter && !u.groups.includes(groupFilter)) continue; // group filter
+            if (domain && !u.email.toLowerCase().endsWith(domain)) continue; // email domain filter
             if (qq) {
-                const hay = `${u.fullName} ${u.studentId} ${u.email} ${u.major} ${u.faculty}`.toLowerCase();
+                const hay =
+                    `${u.fullName} ${u.studentId} ${u.email} ${u.major} ${u.faculty}`.toLowerCase();
                 if (!hay.includes(qq)) continue;
             }
             out.push(u);
@@ -61,8 +56,11 @@ export default function BanManager() {
         return out;
     }, [users, q, domain, groupFilter]);
 
-    // header
-    const leftIds = React.useMemo(() => filteredUsers.map((u) => u.id), [filteredUsers]);
+    // ---- Header Select (Search users) ----
+    const leftIds = React.useMemo(
+        () => filteredUsers.map((u) => u.id),
+        [filteredUsers],
+    );
     const leftSelectedCount = React.useMemo(() => {
         if (selLeft.mode === "none") return 0;
         if (selLeft.mode === "some") {
@@ -70,26 +68,43 @@ export default function BanManager() {
             for (const id of leftIds) if (selLeft.picked.has(id)) c++;
             return c;
         }
-        return leftIds.length - Array.from(selLeft.excluded).filter((id) => leftIds.includes(id)).length;
+        return (
+            leftIds.length -
+            Array.from(selLeft.excluded).filter((id) => leftIds.includes(id)).length
+        );
     }, [selLeft, leftIds]);
+    const leftHeaderChecked =
+        leftSelectedCount > 0 && leftSelectedCount === leftIds.length;
+    const leftHeaderIndeterminate =
+        leftSelectedCount > 0 && leftSelectedCount < leftIds.length;
+    const leftHeaderRef = React.useRef<HTMLInputElement>(null);
+    React.useEffect(() => {
+        if (leftHeaderRef.current)
+            leftHeaderRef.current.indeterminate = leftHeaderIndeterminate;
+    }, [leftHeaderIndeterminate]);
+    const toggleSelectAllLeft = () => {
+        if (leftHeaderChecked) setSelLeft(clearSelection());
+        else setSelLeft(selectAllFiltered());
+    };
 
-    const leftHeaderCb = useHeaderCheckbox(leftSelectedCount, leftIds.length, () => {
-        const all = leftSelectedCount === leftIds.length && leftIds.length > 0;
-        setSelLeft(all ? clearSelection() : selectAllFiltered());
-    });
-
-    // Basket
+    // Basket (ผู้ใช้ที่จะ ban) — ไม่มี selection ตามที่ต้องการ
     const [basket, setBasket] = React.useState<string[]>([]);
     const basketUsers: User[] = React.useMemo(
-        () => basket.map((id) => users.find((u) => u.id === id)).filter(Boolean) as User[],
+        () =>
+            basket
+                .map((id) => users.find((u) => u.id === id))
+                .filter(Boolean) as User[],
         [basket, users],
     );
+
     const addSelectedToBasket = () => {
         const ids: string[] =
             selLeft.mode === "some"
                 ? Array.from(selLeft.picked)
                 : selLeft.mode === "allFiltered"
-                    ? filteredUsers.filter((u) => !selLeft.excluded.has(u.id)).map((u) => u.id)
+                    ? filteredUsers
+                        .filter((u) => !selLeft.excluded.has(u.id))
+                        .map((u) => u.id)
                     : [];
         if (!ids.length) return;
         const s = new Set(basket);
@@ -101,7 +116,9 @@ export default function BanManager() {
     /* ---------------- Basket options ---------------- */
     const [reason, setReason] = React.useState<string>("");
     const [scopeGroupId, setScopeGroupId] = React.useState<string>(""); // "" = Global
-    const [duration, setDuration] = React.useState<"30m" | "1h" | "2h" | "1d" | "7d" | "∞">("1h");
+    const [duration, setDuration] = React.useState<
+        "30m" | "1h" | "2h" | "1d" | "7d" | "∞"
+    >("1h");
 
     const computeEndAt = (): string | undefined => {
         const now = new Date();
@@ -116,6 +133,7 @@ export default function BanManager() {
                 return addDays(now, 1).toISOString();
             case "7d":
                 return addDays(now, 7).toISOString();
+            case "∞":
             default:
                 return undefined;
         }
@@ -125,7 +143,7 @@ export default function BanManager() {
         if (!basket.length) return;
         if (!confirm(`Ban ${basket.length} user(s)?`)) return;
         banMany(basket, {
-            groupId: scopeGroupId || undefined,
+            groupId: scopeGroupId || undefined, // "" => Global
             reason: reason || undefined,
             endAt: computeEndAt(),
         });
@@ -133,21 +151,22 @@ export default function BanManager() {
         setReason("");
     };
 
-    /* ---------------- Current bans table ---------------- */
+    /* ---------------- BOTTOM: Current bans + filters ---------------- */
     type BanRow = { b: (typeof bans)[number]; u?: User; gName: string };
     const banRows: BanRow[] = React.useMemo(() => {
         const userById = new Map(users.map((u) => [u.id, u]));
         return bans.map((b) => ({
             b,
             u: userById.get(b.userId),
-            gName: b.groupId ? groupNameById.get(b.groupId) ?? "Unknown" : "Global",
+            gName: b.groupId ? (groupNameById.get(b.groupId) ?? "Unknown") : "Global",
         }));
     }, [bans, users, groupNameById]);
 
     const [qBans, setQBans] = React.useState<string>("");
-    const [banGroupFilter, setBanGroupFilter] = React.useState<string>("");
+    const [banGroupFilter, setBanGroupFilter] = React.useState<string>(""); // "" = All, "__GLOBAL__" = Global only, else groupId
     const [banDomain, setBanDomain] = React.useState<string | undefined>();
-    const [selBans, setSelBans] = React.useState<SelectionState>(clearSelection());
+    const [selBans, setSelBans] =
+        React.useState<SelectionState>(clearSelection());
 
     const filteredBans: BanRow[] = React.useMemo(() => {
         const qq = qBans.trim().toLowerCase();
@@ -159,19 +178,27 @@ export default function BanManager() {
             } else if (banGroupFilter) {
                 if ((r.b.groupId ?? "") !== banGroupFilter) continue;
             }
-            if (banDomain && r.u && !r.u.email.toLowerCase().endsWith(banDomain)) continue;
+            if (banDomain && r.u && !r.u.email.toLowerCase().endsWith(banDomain))
+                continue;
             if (qq) {
                 const name = r.u?.fullName.toLowerCase() ?? "";
                 const email = r.u?.email.toLowerCase() ?? "";
                 const reasonTxt = (r.b.reason ?? "").toLowerCase();
-                if (!(name.includes(qq) || email.includes(qq) || reasonTxt.includes(qq))) continue;
+                if (
+                    !(name.includes(qq) || email.includes(qq) || reasonTxt.includes(qq))
+                )
+                    continue;
             }
             out.push(r);
         }
         return out;
     }, [banRows, qBans, banGroupFilter, banDomain]);
 
-    const banIds = React.useMemo(() => filteredBans.map((r) => r.b.id), [filteredBans]);
+    // ---- Header Select (Current bans) ----
+    const banIds = React.useMemo(
+        () => filteredBans.map((r) => r.b.id),
+        [filteredBans],
+    );
     const banSelectedCount = React.useMemo(() => {
         if (selBans.mode === "none") return 0;
         if (selBans.mode === "some") {
@@ -179,20 +206,33 @@ export default function BanManager() {
             for (const id of banIds) if (selBans.picked.has(id)) c++;
             return c;
         }
-        return banIds.length - Array.from(selBans.excluded).filter((id) => banIds.includes(id)).length;
+        return (
+            banIds.length -
+            Array.from(selBans.excluded).filter((id) => banIds.includes(id)).length
+        );
     }, [selBans, banIds]);
-
-    const bansHeaderCb = useHeaderCheckbox(banSelectedCount, banIds.length, () => {
-        const all = banSelectedCount === banIds.length && banIds.length > 0;
-        setSelBans(all ? clearSelection() : selectAllFiltered());
-    });
+    const bansHeaderChecked =
+        banSelectedCount > 0 && banSelectedCount === banIds.length;
+    const bansHeaderIndeterminate =
+        banSelectedCount > 0 && banSelectedCount < banIds.length;
+    const bansHeaderRef = React.useRef<HTMLInputElement>(null);
+    React.useEffect(() => {
+        if (bansHeaderRef.current)
+            bansHeaderRef.current.indeterminate = bansHeaderIndeterminate;
+    }, [bansHeaderIndeterminate]);
+    const toggleSelectAllBans = () => {
+        if (bansHeaderChecked) setSelBans(clearSelection());
+        else setSelBans(selectAllFiltered());
+    };
 
     const bulkUnban = () => {
         const ids: string[] =
             selBans.mode === "some"
                 ? Array.from(selBans.picked)
                 : selBans.mode === "allFiltered"
-                    ? filteredBans.filter((r) => !selBans.excluded.has(r.b.id)).map((r) => r.b.id)
+                    ? filteredBans
+                        .filter((r) => !selBans.excluded.has(r.b.id))
+                        .map((r) => r.b.id)
                     : [];
         if (!ids.length) return;
         if (!confirm(`Unban ${ids.length} record(s)?`)) return;
@@ -203,8 +243,9 @@ export default function BanManager() {
     /* ---------------- UI ---------------- */
     return (
         <Section title="Bans">
+            {/* Dual table */}
             <div className="grid grid-cols-12 gap-4">
-                {/* LEFT: search users (list ธรรมดา ใช้ VirtualTable เหมือนเดิม) */}
+                {/* LEFT: search users */}
                 <div className="col-span-12 xl:col-span-7">
                     <div className="mb-2 text-sm font-medium">Search users</div>
 
@@ -218,6 +259,7 @@ export default function BanManager() {
                             placeholder="Search name / studentId / email…"
                             className="w-64 rounded-lg border px-3 py-2 text-sm"
                         />
+                        {/* filter by group */}
                         <select
                             className="rounded-lg border px-3 py-2 text-sm"
                             value={groupFilter}
@@ -233,6 +275,7 @@ export default function BanManager() {
                                 </option>
                             ))}
                         </select>
+                        {/* filter by email domain */}
                         <select
                             className="rounded-lg border px-3 py-2 text-sm"
                             value={domain ?? ""}
@@ -252,35 +295,59 @@ export default function BanManager() {
                         <button
                             className="ml-auto rounded-lg border px-3 py-1 text-sm"
                             onClick={addSelectedToBasket}
-                            disabled={selLeft.mode === "none" || (selLeft.mode === "some" && selLeft.picked.size === 0)}
+                            disabled={
+                                selLeft.mode === "none" ||
+                                (selLeft.mode === "some" && selLeft.picked.size === 0)
+                            }
                         >
                             Add to basket
                         </button>
                     </div>
 
+                    {/* กล่องซ้ายและขวา ตั้ง min-h เท่ากัน เพื่อบาลานซ์ความสูง */}
                     <div className="min-h-[560px] rounded-xl border">
                         <div className="grid grid-cols-12 border-b text-left text-sm">
                             <div className="col-span-1 px-2 py-2">
-                                <input ref={leftHeaderCb.ref} type="checkbox" checked={leftHeaderCb.checked} onChange={leftHeaderCb.onChange} />
+                                <label className="inline-flex items-center gap-2">
+                                    <input
+                                        ref={leftHeaderRef}
+                                        type="checkbox"
+                                        checked={leftHeaderChecked}
+                                        onChange={toggleSelectAllLeft}
+                                    />
+                                    <span></span>
+                                </label>
                             </div>
                             <div className="col-span-4 px-2 py-2">Name</div>
                             <div className="col-span-4 px-2 py-2">Email</div>
                             <div className="col-span-3 px-2 py-2">Groups</div>
                         </div>
+                        {/* VirtualTable สูง 480px (สองฝั่งเท่ากัน) */}
                         <VirtualTable
                             items={filteredUsers}
                             rowHeight={44}
                             renderRow={({ item: u }) => {
-                                const gNames = u.groups.map((gid) => groupNameById.get(gid) || gid);
-                                const label = gNames.length <= 2 ? gNames.join(", ") : `${gNames.slice(0, 2).join(", ")} +${gNames.length - 2} more`;
+                                const gNames = u.groups.map(
+                                    (gid) => groupNameById.get(gid) || gid,
+                                );
+                                const label =
+                                    gNames.length <= 2
+                                        ? gNames.join(", ")
+                                        : `${gNames.slice(0, 2).join(", ")} +${gNames.length - 2} more`;
                                 return (
                                     <div className="grid grid-cols-12 items-center border-b text-sm">
                                         <div className="col-span-1 px-2 py-2">
-                                            <input type="checkbox" checked={isSelected(u.id, selLeft)} onChange={handleCheck(u.id, setSelLeft)} />
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected(u.id, selLeft)}
+                                                onChange={handleCheck(u.id, setSelLeft)}
+                                            />
                                         </div>
                                         <div className="col-span-4 px-2 py-2">
                                             <div className="font-medium">{u.fullName}</div>
-                                            <div className="text-xs text-gray-500">ID: {u.studentId}</div>
+                                            <div className="text-xs text-gray-500">
+                                                ID: {u.studentId}
+                                            </div>
                                         </div>
                                         <div className="col-span-4 px-2 py-2">{u.email}</div>
                                         <div className="col-span-3 px-2 py-2">{label || "-"}</div>
@@ -291,7 +358,7 @@ export default function BanManager() {
                     </div>
                 </div>
 
-                {/* RIGHT: basket */}
+                {/* RIGHT: basket (no selection) */}
                 <div className="col-span-12 xl:col-span-5">
                     <div className="mb-2 text-sm font-medium">Ban basket</div>
                     <div className="mb-3 grid grid-cols-1 gap-2 rounded-xl border p-3">
@@ -338,25 +405,23 @@ export default function BanManager() {
                             <div className="text-sm text-gray-600">
                                 Selected: <b>{basketUsers.length}</b>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    className="rounded-lg border px-3 py-1 text-sm text-rose-600 ring-1 ring-rose-200 hover:bg-rose-50"
-                                    onClick={handleBan}
-                                    disabled={!basketUsers.length}
-                                >
-                                    Ban
-                                </button>
-                            </div>
+                            <button
+                                className="rounded-lg bg-rose-600 px-3 py-1 text-sm text-white shadow-sm hover:bg-rose-700"
+                                onClick={handleBan}
+                                disabled={!basketUsers.length}
+                            >
+                                Ban
+                            </button>
                         </div>
                     </div>
 
-                    {/* basket list (คง VirtualTable) */}
                     <div className="min-h-[560px] rounded-xl border">
                         <div className="grid grid-cols-12 border-b text-left text-sm">
                             <div className="col-span-7 px-2 py-2">User</div>
                             <div className="col-span-4 px-2 py-2">Email</div>
                             <div className="col-span-1 px-2 py-2"></div>
                         </div>
+                        {/* VirtualTable สูง 480px เหมือนฝั่งซ้าย */}
                         <VirtualTable
                             items={basketUsers}
                             rowHeight={44}
@@ -364,11 +429,18 @@ export default function BanManager() {
                                 <div className="grid grid-cols-12 items-center border-b text-sm">
                                     <div className="col-span-7 px-2 py-2">
                                         <div className="font-medium">{u.fullName}</div>
-                                        <div className="text-xs text-gray-500">ID: {u.studentId}</div>
+                                        <div className="text-xs text-gray-500">
+                                            ID: {u.studentId}
+                                        </div>
                                     </div>
                                     <div className="col-span-4 px-2 py-2">{u.email}</div>
                                     <div className="col-span-1 px-2 py-2">
-                                        <button className="rounded-lg border px-2 py-1 text-xs" onClick={() => setBasket((b) => b.filter((x) => x !== u.id))}>
+                                        <button
+                                            className="rounded-lg border px-2 py-1 text-xs"
+                                            onClick={() =>
+                                                setBasket((b) => b.filter((x) => x !== u.id))
+                                            }
+                                        >
                                             Remove
                                         </button>
                                     </div>
@@ -379,7 +451,7 @@ export default function BanManager() {
                 </div>
             </div>
 
-            {/* ---------------- Current bans (styled table) ---------------- */}
+            {/* Current bans */}
             <div className="mt-6">
                 <div className="mb-2 text-sm font-medium">Current bans</div>
 
@@ -393,6 +465,7 @@ export default function BanManager() {
                         placeholder="Search bans by name / email / reason…"
                         className="w-64 rounded-lg border px-3 py-2 text-sm"
                     />
+                    {/* Group filter: All / Global only / specific group */}
                     <select
                         className="rounded-lg border px-3 py-2 text-sm"
                         value={banGroupFilter}
@@ -409,6 +482,7 @@ export default function BanManager() {
                             </option>
                         ))}
                     </select>
+                    {/* Email domain filter */}
                     <select
                         className="rounded-lg border px-3 py-2 text-sm"
                         value={banDomain ?? ""}
@@ -437,74 +511,69 @@ export default function BanManager() {
                     </button>
                 </div>
 
-                <AdminCardTable minWidth={1100}>
-                    <Table>
-                        <TableHeader className="border-b border-gray-100 dark:border-white/10">
-                            <TableRow>
-                                <TableCell isHeader className="w-10 px-4 py-3">
+                <div className="rounded-xl border">
+                    <div className="grid grid-cols-12 border-b text-left text-sm">
+                        <div className="col-span-1 px-2 py-2">
+                            {/* Header checkbox: Select All + indeterminate */}
+                            <label className="inline-flex items-center gap-2">
+                                <input
+                                    ref={bansHeaderRef}
+                                    type="checkbox"
+                                    checked={bansHeaderChecked}
+                                    onChange={toggleSelectAllBans}
+                                />
+                                <span></span>
+                            </label>
+                        </div>
+                        <div className="col-span-3 px-2 py-2">User</div>
+                        <div className="col-span-2 px-2 py-2">Scope</div>
+                        <div className="col-span-3 px-2 py-2">Reason</div>
+                        <div className="col-span-1 px-2 py-2">Start</div>
+                        <div className="col-span-1 px-2 py-2">End</div>
+                        <div className="col-span-1 px-2 py-2"></div>
+                    </div>
+                    <VirtualTable
+                        items={filteredBans}
+                        rowHeight={44}
+                        renderRow={({ item: { b, u, gName } }) => (
+                            <div className="grid grid-cols-12 items-center border-b text-sm">
+                                <div className="col-span-1 px-2 py-2">
                                     <input
                                         type="checkbox"
-                                        ref={bansHeaderCb.ref}
-                                        checked={bansHeaderCb.checked}
-                                        onChange={bansHeaderCb.onChange}
+                                        checked={isSelected(b.id, selBans)}
+                                        onChange={handleCheck(b.id, setSelBans)}
                                     />
-                                </TableCell>
-                                <TableCell isHeader className="px-5 py-3 text-start text-gray-500 text-theme-xs">
-                                    User
-                                </TableCell>
-                                <TableCell isHeader className="px-5 py-3 text-start text-gray-500 text-theme-xs">
-                                    Scope
-                                </TableCell>
-                                <TableCell isHeader className="px-5 py-3 text-start text-gray-500 text-theme-xs">
-                                    Reason
-                                </TableCell>
-                                <TableCell isHeader className="px-5 py-3 text-start text-gray-500 text-theme-xs">
-                                    Start
-                                </TableCell>
-                                <TableCell isHeader className="px-5 py-3 text-start text-gray-500 text-theme-xs">
-                                    End
-                                </TableCell>
-                                <TableCell isHeader className="px-5 py-3 text-start text-gray-500 text-theme-xs"></TableCell>
-                            </TableRow>
-                        </TableHeader>
-
-                        <TableBody className="divide-y divide-gray-100 dark:divide-white/10">
-                            {filteredBans.map(({ b, u, gName }) => (
-                                <TableRow key={b.id}>
-                                    <TableCell className="w-10 px-4 py-3">
-                                        <input
-                                            type="checkbox"
-                                            checked={isSelected(b.id, selBans)}
-                                            onChange={(e) => setSelBans((s) => toggleOne(b.id, e.currentTarget.checked, s))}
-                                        />
-                                    </TableCell>
-
-                                    <TableCell className="px-5 py-4">
-                                        {u ? (
-                                            <UserCell title={u.fullName} subtitle={`${u.email}${u.studentId ? " · ID: " + u.studentId : ""}`} />
-                                        ) : (
-                                            <UserCell title={b.userId} />
-                                        )}
-                                    </TableCell>
-
-                                    <TableCell className="px-5 py-4">{gName}</TableCell>
-                                    <TableCell className="px-5 py-4">{b.reason || "-"}</TableCell>
-                                    <TableCell className="px-5 py-4">{new Date(b.startAt).toLocaleDateString()}</TableCell>
-                                    <TableCell className="px-5 py-4">{b.endAt ? new Date(b.endAt).toLocaleDateString() : "∞"}</TableCell>
-
-                                    <TableCell className="px-5 py-4">
-                                        <button
-                                            className="rounded-full px-3 py-1 text-xs ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50 dark:ring-white/10 dark:text-gray-300"
-                                            onClick={() => unban(b.id)}
-                                        >
-                                            Unban
-                                        </button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </AdminCardTable>
+                                </div>
+                                <div className="col-span-3 px-2 py-2">
+                                    {u ? (
+                                        <>
+                                            <div className="font-medium">{u.fullName}</div>
+                                            <div className="text-xs text-gray-500">{u.email}</div>
+                                        </>
+                                    ) : (
+                                        b.userId
+                                    )}
+                                </div>
+                                <div className="col-span-2 px-2 py-2">{gName}</div>
+                                <div className="col-span-3 px-2 py-2">{b.reason || "-"}</div>
+                                <div className="col-span-1 px-2 py-2">
+                                    {new Date(b.startAt).toLocaleDateString()}
+                                </div>
+                                <div className="col-span-1 px-2 py-2">
+                                    {b.endAt ? new Date(b.endAt).toLocaleDateString() : "∞"}
+                                </div>
+                                <div className="col-span-1 px-2 py-2">
+                                    <button
+                                        className="rounded-lg border px-2 py-1 text-xs"
+                                        onClick={() => unban(b.id)}
+                                    >
+                                        Unban
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    />
+                </div>
             </div>
         </Section>
     );

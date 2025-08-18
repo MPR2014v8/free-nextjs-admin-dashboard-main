@@ -21,6 +21,7 @@
     "@tailwindcss/postcss": "^4.1.12",
     "apexcharts": "^4.3.0",
     "autoprefixer": "^10.4.20",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "flatpickr": "^4.6.13",
     "idb-keyval": "^6.2.2",
