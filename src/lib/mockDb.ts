@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { v4 as uuid } from "uuid";
-import type { User, Group, Ban, ID } from "./types";
+import type { User, Group, Ban, ID, Role } from "./types";
 import { initialUsers, initialGroups, initialBans } from "./mockData";
 
-/** ---- Simple localStorage persistence (avoid DataClone errors) ---- */
+/** ---- Simple localStorage persistence ---- */
 const LS_KEY = "prism_admin_db_v1";
 
 type DBState = {
@@ -13,7 +13,11 @@ type DBState = {
   bans: Ban[];
 
   // users
-  createUser: (v: Omit<User, "id" | "groups" | "createdAt" | "active"> & { active?: boolean }) => void;
+  createUser: (v: Omit<User, "id" | "groups" | "createdAt" | "active" | "role"> & {
+    active?: boolean;
+    role?: Role;
+    password?: string;
+  }) => void;
   deleteUsersMany: (ids: ID[]) => void;
   setUsersActiveMany: (ids: ID[], active: boolean) => void;
   toggleUserActive: (id: ID) => void;
@@ -33,6 +37,12 @@ type DBState = {
 
   // helpers
   getAllEmailDomains: () => string[];
+
+  // auth helpers (demo)
+  findUserByEmail: (email: string) => User | undefined;
+  verifyUserPassword: (user: User, password: string) => boolean;
+  getUserById: (id: ID) => User | undefined;
+  toPublicUser: (u: User) => { id: ID; fullName: string; email: string; role: Role; studentId: string };
 };
 
 function load(): Pick<DBState, "users" | "groups" | "bans"> {
@@ -44,7 +54,6 @@ function load(): Pick<DBState, "users" | "groups" | "bans"> {
       return parsed;
     }
   } catch {}
-  // fallback seed
   return { users: initialUsers, groups: initialGroups, bans: initialBans };
 }
 
@@ -73,6 +82,8 @@ export const useDB = create<DBState>((set, get) => {
         year: v.year,
         groups: [],
         active: v.active ?? true,
+        role: v.role ?? 'student',          // NEW
+        password: v.password ?? 'student123', // NEW (demo)
         createdAt: new Date().toISOString(),
       };
 
@@ -230,9 +241,19 @@ export const useDB = create<DBState>((set, get) => {
       }
       return Array.from(setd).sort();
     },
+
+    /* ---------- Auth Helpers (demo) ---------- */
+    findUserByEmail: (email) => {
+      return get().users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    },
+    verifyUserPassword: (user, password) => {
+      // เดโม่: เปรียบเทียบตรง ๆ (ห้ามใช้ในโปรดักชันจริง)
+      return (user.password ?? '') === password;
+    },
+    getUserById: (id) => get().users.find(u => u.id === id),
+    toPublicUser: (u) => ({ id: u.id, fullName: u.fullName, email: u.email, role: u.role, studentId: u.studentId }),
   };
 
-  // persist once mounted (Next.js CSR)
   if (typeof window !== "undefined") {
     persist({ users: api.users, groups: api.groups, bans: api.bans });
   }

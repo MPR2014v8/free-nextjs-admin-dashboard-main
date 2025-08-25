@@ -63,8 +63,8 @@ function buildStudentId(i: number, facultyIdx: number, majorIdx: number) {
   return `${year}${fac}${maj}${run}`;
 }
 
-/** ---------------- Generate Users (100) ---------------- */
-function generateUsers(count = 100): User[] {
+/** ---------------- Generate Users (120) ---------------- */
+function generateUsers(count = 120): User[] {
   const users: User[] = [];
   for (let i = 0; i < count; i++) {
     const facultyIdx = i % FACULTIES.length;
@@ -88,6 +88,8 @@ function generateUsers(count = 100): User[] {
       year,
       groups: [],
       active: i % 7 !== 0,
+      role: 'student',          // NEW
+      password: 'student123',   // NEW (demo)
       createdAt: now(),
     });
   }
@@ -99,11 +101,13 @@ function generateUsers(count = 100): User[] {
   users[0].faculty = "Information Technology";
   users[0].year = 4;
   users[0].active = true;
+  users[0].role = 'admin';       // NEW
+  users[0].password = 'admin123';// NEW
 
   return users;
 }
 
-const seedUsers = generateUsers(120);
+const seedUsers = generateUsers();
 
 /** ---------------- Build Groups: Admin + each Faculty + each Major ---------------- */
 const GROUP_ADMIN_ID = uuid();
@@ -145,7 +149,7 @@ function buildGroupsAndMemberships(u: User[]) {
   const byName = new Map(groups.map((g) => [g.name, g]));
   const admin = groups.find((g) => g.id === GROUP_ADMIN_ID)!;
 
-  [0, 1].forEach((i) => admin.members.push(u[i].id)); // 2 แอดมิน
+  [0, 1].forEach((i) => admin.members.push(u[i].id)); // 2 แอดมิน (user[1] จะยังเป็น student แต่ได้อยู่ในกลุ่ม Admin)
 
   for (const usr of u) {
     byName.get(usr.faculty)?.members.push(usr.id);
@@ -166,7 +170,7 @@ function buildGroupsAndMemberships(u: User[]) {
 
 const { groups, users } = buildGroupsAndMemberships(seedUsers);
 
-/** ---------------- Sample Bans (Thai reasons) ---------------- */
+/** ---------------- Sample Bans ---------------- */
 const bans: Ban[] = [
   {
     id: uuid(),
