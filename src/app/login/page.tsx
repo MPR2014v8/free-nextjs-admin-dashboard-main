@@ -66,9 +66,9 @@ export default function LoginPage() {
                     {loading ? "Signing in..." : "Sign in"}
                 </button>
             </form>
-            <p className="mt-4 text-xs text-gray-500">
+            {/* <p className="mt-4 text-xs text-gray-500">
                 Demo: admin <b>admin@udru.ac.th</b> / <b>admin123</b>
-            </p>
+            </p> */}
         </div>
     );
 }
