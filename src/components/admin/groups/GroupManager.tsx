@@ -15,7 +15,6 @@ import {
     SelectionState,
 } from "@/components/admin/common/selection";
 
-/** อ่าน checked ก่อน แล้วค่อยอัปเดต selection (กัน React recycle event) */
 const handleCheck =
     (id: string, setSel: React.Dispatch<React.SetStateAction<SelectionState>>) =>
         (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,7 +93,7 @@ function EditMembersBody({ groupId }: { groupId: string }) {
     const [addYear, setAddYear] = React.useState<number | undefined>();
     const [pick, setPick] = React.useState<SelectionState>(clearSelection());
 
-    // ✅ selection สำหรับฝั่ง Members (ลบหลายคน)
+    // ✅ selection สำหรับฝั่ง Members
     const [selMembers, setSelMembers] =
         React.useState<SelectionState>(clearSelection());
     const membersHeaderRef = React.useRef<HTMLInputElement>(null);
@@ -217,7 +216,6 @@ function EditMembersBody({ groupId }: { groupId: string }) {
     };
 
     if (!group) {
-        // ปกติจะไม่เข้าเคสนี้เพราะ parent ตรวจสอบแล้ว แต่กันเหนียว
         return <div className="text-sm text-rose-600">Group not found.</div>;
     }
 
@@ -282,7 +280,6 @@ function EditMembersBody({ groupId }: { groupId: string }) {
                     </label>
                 </div>
 
-                {/* *** ตารางสมาชิก: overflow-x-auto ชั้นเดียว *** */}
                 <div className="rounded-xl border overflow-x-auto">
                     <div className="min-w-[880px]">
                         <div className="grid grid-cols-12 border-b text-left text-sm">
@@ -556,7 +553,7 @@ export default function GroupManager() {
 
             <div className="grid gap-4">
                 {filteredGroups.map((g) => {
-                    // ✅ dedupe รายชื่อสมาชิก ป้องกัน key ซ้ำ
+                    
                     const uniqueMemberIds = Array.from(new Set(g.members));
                     const previewIds = uniqueMemberIds.slice(0, 10);
 

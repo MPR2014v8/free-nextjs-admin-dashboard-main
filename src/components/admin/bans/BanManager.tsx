@@ -15,7 +15,6 @@ import {
 import type { User } from "@/lib/types";
 import { addMinutes, addDays } from "date-fns";
 
-/** helper: อ่าน checked ก่อน แล้วค่อยอัปเดต selection (กัน event recycle) */
 const handleCheck =
     (id: string, setSel: React.Dispatch<React.SetStateAction<SelectionState>>) =>
         (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,7 +25,6 @@ const handleCheck =
 export default function BanManager() {
     const { users, groups, bans, banMany, unban, unbanMany } = useDB();
 
-    // id -> group name
     const groupNameById = React.useMemo(
         () => new Map(groups.map((g) => [g.id, g.name] as const)),
         [groups],
@@ -304,7 +302,6 @@ export default function BanManager() {
                         </button>
                     </div>
 
-                    {/* กล่องซ้ายและขวา ตั้ง min-h เท่ากัน เพื่อบาลานซ์ความสูง */}
                     <div className="min-h-[560px] rounded-xl border">
                         <div className="grid grid-cols-12 border-b text-left text-sm">
                             <div className="col-span-1 px-2 py-2">
@@ -322,7 +319,7 @@ export default function BanManager() {
                             <div className="col-span-4 px-2 py-2">Email</div>
                             <div className="col-span-3 px-2 py-2">Groups</div>
                         </div>
-                        {/* VirtualTable สูง 480px (สองฝั่งเท่ากัน) */}
+               
                         <VirtualTable
                             items={filteredUsers}
                             rowHeight={44}
@@ -358,7 +355,6 @@ export default function BanManager() {
                     </div>
                 </div>
 
-                {/* RIGHT: basket (no selection) */}
                 <div className="col-span-12 xl:col-span-5">
                     <div className="mb-2 text-sm font-medium">Ban basket</div>
                     <div className="mb-3 grid grid-cols-1 gap-2 rounded-xl border p-3">
@@ -421,7 +417,7 @@ export default function BanManager() {
                             <div className="col-span-4 px-2 py-2">Email</div>
                             <div className="col-span-1 px-2 py-2"></div>
                         </div>
-                        {/* VirtualTable สูง 480px เหมือนฝั่งซ้าย */}
+          
                         <VirtualTable
                             items={basketUsers}
                             rowHeight={44}

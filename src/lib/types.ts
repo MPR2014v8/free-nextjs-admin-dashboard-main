@@ -13,8 +13,8 @@ export type User = {
   year: number;
   groups: ID[];
   active: boolean;
-  role: Role;             // NEW
-  password?: string;      // NEW (demo only)
+  role: Role;             
+  password?: string;      
   createdAt: string;
 };
 

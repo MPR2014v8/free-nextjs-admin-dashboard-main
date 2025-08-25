@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/app/api/auth/signin/route.ts
 import { NextResponse } from "next/server";
 import { writeSession } from "@/lib/auth";
 
-/** DEMO credentials แบบง่าย */
+/** DEMO credentials */
 const DEMO_USERS = {
     "admin@udru.ac.th": {
         password: "admin123",
@@ -11,13 +10,30 @@ const DEMO_USERS = {
         userId: "u_admin",
         fullName: "ผู้ดูแลหลัก",
     },
-    // เพิ่มได้ตามต้องการ
-    // "staff@udru.ac.th": { password: "staff123", role: "staff", userId: "u_staff", fullName: "Staff" },
 };
 
+async function readCredentials(req: Request): Promise<{ email: string; password: string }> {
+    const ct = req.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+        const b = await req.json().catch(() => ({}));
+        return { email: String(b.email ?? ""), password: String(b.password ?? "") };
+    }
+    if (ct.includes("application/x-www-form-urlencoded") || ct.includes("multipart/form-data")) {
+        const fd = await req.formData();
+        return { email: String(fd.get("email") ?? ""), password: String(fd.get("password") ?? "") };
+    }
+    try {
+        const b = await req.json();
+        return { email: String((b as any).email ?? ""), password: String((b as any).password ?? "") };
+    } catch {
+        return { email: "", password: "" };
+    }
+}
+
 export async function POST(req: Request) {
-    const { email, password } = await req.json().catch(() => ({}));
-    const key = String(email || "").toLowerCase().trim();
+    const { email, password } = await readCredentials(req);
+
+    const key = email.toLowerCase().trim();
     const user = (DEMO_USERS as any)[key];
 
     if (!user || user.password !== password) {

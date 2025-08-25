@@ -1,12 +1,13 @@
-// src/app/login/page.tsx
 "use client";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
     const router = useRouter();
-    const [email, setEmail] = React.useState("admin@udru.ac.th");
-    const [password, setPassword] = React.useState("admin123");
+    // const [email, setEmail] = React.useState("admin@udru.ac.th");
+    // const [password, setPassword] = React.useState("admin123");
+    const [email, setEmail] = React.useState("");
+    const [password, setPassword] = React.useState("");
     const [error, setError] = React.useState<string | null>(null);
     const [loading, setLoading] = React.useState(false);
 

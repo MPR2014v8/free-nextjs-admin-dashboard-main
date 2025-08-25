@@ -82,8 +82,8 @@ export const useDB = create<DBState>((set, get) => {
         year: v.year,
         groups: [],
         active: v.active ?? true,
-        role: v.role ?? 'student',          // NEW
-        password: v.password ?? 'student123', // NEW (demo)
+        role: v.role ?? 'student',         
+        password: v.password ?? 'student123',
         createdAt: new Date().toISOString(),
       };
 
@@ -247,7 +247,6 @@ export const useDB = create<DBState>((set, get) => {
       return get().users.find(u => u.email.toLowerCase() === email.toLowerCase());
     },
     verifyUserPassword: (user, password) => {
-      // เดโม่: เปรียบเทียบตรง ๆ (ห้ามใช้ในโปรดักชันจริง)
       return (user.password ?? '') === password;
     },
     getUserById: (id) => get().users.find(u => u.id === id),

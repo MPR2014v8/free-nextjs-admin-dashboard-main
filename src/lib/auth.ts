@@ -1,26 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// src/lib/auth.ts
+/* src/lib/auth.ts */
 import { cookies } from "next/headers";
 
-export type Role = "admin" | "staff" | "student";
-
-export interface SessionData {
+export type SessionRole = "admin" | "staff" | "student";
+export type SessionData = {
   userId: string;
-  role: Role;
+  role: SessionRole;
   fullName: string;
   email: string;
-}
+};
 
-const SESSION_COOKIE = "prism_session";
+const SESSION_COOKIE = "pa_session";
 
-/** รองรับทั้งกรณี cookies() เป็น sync หรือ async */
-async function getCookieStore() {
-  return (await (cookies() as any)) as Awaited<ReturnType<typeof cookies>>;
-}
-
+/** อ่าน session จาก cookie (ต้อง await cookies() บน Next.js 15) */
 export async function readSession(): Promise<SessionData | null> {
-  const store = await getCookieStore();
-  const raw = store.get(SESSION_COOKIE)?.value;
+  const jar = await cookies();
+  const raw = jar.get(SESSION_COOKIE)?.value;
   if (!raw) return null;
   try {
     return JSON.parse(raw) as SessionData;
@@ -29,20 +23,21 @@ export async function readSession(): Promise<SessionData | null> {
   }
 }
 
-export async function writeSession(
-  data: SessionData,
-  maxAgeSeconds = 60 * 60 * 24 * 7,
-) {
-  const store = await getCookieStore();
-  store.set(SESSION_COOKIE, JSON.stringify(data), {
+/** เขียน session ลง cookie */
+export async function writeSession(data: SessionData): Promise<void> {
+  const jar = await cookies();
+  jar.set({
+    name: SESSION_COOKIE,
+    value: JSON.stringify(data),
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: maxAgeSeconds,
+    maxAge: 60 * 60 * 24 * 7, // 7 วัน
   });
 }
 
-export async function clearSession() {
-  const store = await getCookieStore();
-  store.delete(SESSION_COOKIE);
+/** ลบ session ออกจาก cookie */
+export async function clearSession(): Promise<void> {
+  const jar = await cookies();
+  jar.delete(SESSION_COOKIE);
 }

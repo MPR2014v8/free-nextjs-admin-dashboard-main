@@ -1,4 +1,3 @@
-// src/app/api/auth/signout/route.ts
 import { NextResponse } from "next/server";
 import { clearSession } from "@/lib/auth";
 

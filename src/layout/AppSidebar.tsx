@@ -42,7 +42,6 @@ const navItems: NavItem[] = [
     name: "User Profile",
     path: "/profile",
   },
-
   {
     name: "Management",
     icon: <ListIcon />,

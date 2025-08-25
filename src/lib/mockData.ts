@@ -88,8 +88,8 @@ function generateUsers(count = 120): User[] {
       year,
       groups: [],
       active: i % 7 !== 0,
-      role: 'student',          // NEW
-      password: 'student123',   // NEW (demo)
+      role: 'student',         
+      password: 'student123',   
       createdAt: now(),
     });
   }
@@ -101,8 +101,8 @@ function generateUsers(count = 120): User[] {
   users[0].faculty = "Information Technology";
   users[0].year = 4;
   users[0].active = true;
-  users[0].role = 'admin';       // NEW
-  users[0].password = 'admin123';// NEW
+  users[0].role = 'admin';      
+  users[0].password = 'admin123';
 
   return users;
 }
@@ -149,7 +149,7 @@ function buildGroupsAndMemberships(u: User[]) {
   const byName = new Map(groups.map((g) => [g.name, g]));
   const admin = groups.find((g) => g.id === GROUP_ADMIN_ID)!;
 
-  [0, 1].forEach((i) => admin.members.push(u[i].id)); // 2 แอดมิน (user[1] จะยังเป็น student แต่ได้อยู่ในกลุ่ม Admin)
+  [0, 1].forEach((i) => admin.members.push(u[i].id)); 
 
   for (const usr of u) {
     byName.get(usr.faculty)?.members.push(usr.id);

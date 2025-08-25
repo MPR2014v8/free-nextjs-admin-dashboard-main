@@ -16,7 +16,6 @@ import {
 } from "@/components/admin/common/selection";
 import { FACULTIES, MAJORS_BY_FACULTY } from "@/lib/mockData";
 
-/** helper: อ่าน checked ก่อน แล้วค่อยอัปเดต selection (กัน React recycle event) */
 const handleCheck =
     (id: string, setSel: React.Dispatch<React.SetStateAction<SelectionState>>) =>
         (e: React.ChangeEvent<HTMLInputElement>) => {
