@@ -24,6 +24,8 @@ export type UIUser = {
     studentId?: string;
 };
 
+// test
+
 /** ---------- tiny fetch helper ---------- */
 async function j<T>(res: Response): Promise<T> {
     if (!res.ok) {
