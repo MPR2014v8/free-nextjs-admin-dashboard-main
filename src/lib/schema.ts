@@ -36,9 +36,9 @@ export const user = pgTable("User", {
     email: varchar("email", { length: 64 }).notNull(),
     password: varchar("password", { length: 64 }),
     prefix: prefixEnum('prefix'),
-    firstname: varchar("name", { length: 250 }),
+    firstname: varchar("firstname", { length: 250 }),
     lastname: varchar("lastname", { length: 250 }),
-    status: boolean("status").default(true),
+    is_active: boolean("is_active").default(true),
     departmentId: uuid("department"),
     policyId: uuid("policyId").references(() => policy.id),
 }, (table) => {

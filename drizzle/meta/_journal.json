@@ -15,6 +15,13 @@
       "when": 1757163359210,
       "tag": "0001_dazzling_sharon_carter",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1757165116747,
+      "tag": "0002_brown_domino",
+      "breakpoints": true
     }
   ]
 }

@@ -10,6 +10,6 @@ export async function POST(req: Request) {
 
     if (!ids.length) return NextResponse.json({ ok: false, error: "EMPTY" }, { status: 400 });
 
-    await db.update(user).set({ status: active }).where(inArray(user.id, ids));
+    await db.update(user).set({ is_active: active }).where(inArray(user.id, ids));
     return NextResponse.json({ ok: true, updated: ids.length, active });
 }

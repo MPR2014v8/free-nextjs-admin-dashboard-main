@@ -13,8 +13,8 @@ export type User = {
   year: number;
   groups: ID[];
   active: boolean;
-  role: Role;             
-  password?: string;      
+  role: Role;
+  password?: string;
   createdAt: string;
 };
 
@@ -37,3 +37,34 @@ export type Ban = {
   endAt?: string;
   createdBy: ID;
 };
+
+export type UIPolicy = {
+  id: string;
+  name: string;
+  detail?: string | null;
+  tokenLimit: number;
+  fileLimit: number;
+  fileSizeLimit: number;
+  share: boolean;
+};
+
+export type UIUser = {
+  id: string;
+  email: string;
+  firstname?: string | null;
+  lastname?: string | null;
+  fullName: string;      
+  isActive: boolean;    
+  policyId?: string | null;    
+  departmentId?: string | null;
+};
+
+export type UIBan = {
+  id: string;
+  userId: string;
+  groupId?: string | null;     
+  reason?: string | null;
+  startAt: string;             
+  endAt?: string | null;       
+};
+
