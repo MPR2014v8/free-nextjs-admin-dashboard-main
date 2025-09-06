@@ -4,7 +4,8 @@
 import React from "react";
 import Section from "@/components/admin/Section";
 import GroupForm, { GroupFormValues } from "./GroupForm";
-import { useDB } from "@/lib/mockDb";
+// import { useDB } from "@/lib/mockDb";
+import { usePolicyDB as useDB } from "@/lib/policyDb";
 import SearchAndFilterBar from "@/components/admin/common/SearchAndFilterBar";
 import { VirtualTable } from "@/components/admin/common/VirtualTable";
 import {
@@ -553,7 +554,7 @@ export default function GroupManager() {
 
             <div className="grid gap-4">
                 {filteredGroups.map((g) => {
-                    
+
                     const uniqueMemberIds = Array.from(new Set(g.members));
                     const previewIds = uniqueMemberIds.slice(0, 10);
 

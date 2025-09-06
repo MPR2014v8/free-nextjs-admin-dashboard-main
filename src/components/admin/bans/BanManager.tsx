@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
 import React from "react";
 import Section from "@/components/admin/Section";
-import { useDB } from "@/lib/mockDb";
+// import { useDB } from "@/lib/mockDb";
+import { useDB } from "@/lib/adminDb";
 import { VirtualTable } from "@/components/admin/common/VirtualTable";
 import {
     clearSelection,
@@ -12,7 +14,8 @@ import {
     selectAllFiltered,
     SelectionState,
 } from "@/components/admin/common/selection";
-import type { User } from "@/lib/types";
+// import type { User } from "@/lib/types";
+import type { UIUser as User, UIBan } from "@/lib/adminDb";
 import { addMinutes, addDays } from "date-fns";
 
 const handleCheck =
@@ -150,7 +153,8 @@ export default function BanManager() {
     };
 
     /* ---------------- BOTTOM: Current bans + filters ---------------- */
-    type BanRow = { b: (typeof bans)[number]; u?: User; gName: string };
+    // type BanRow = { b: (typeof bans)[number]; u?: User; gName: string };
+    type BanRow = { b: UIBan; u?: User; gName: string };
     const banRows: BanRow[] = React.useMemo(() => {
         const userById = new Map(users.map((u) => [u.id, u]));
         return bans.map((b) => ({
@@ -319,7 +323,7 @@ export default function BanManager() {
                             <div className="col-span-4 px-2 py-2">Email</div>
                             <div className="col-span-3 px-2 py-2">Groups</div>
                         </div>
-               
+
                         <VirtualTable
                             items={filteredUsers}
                             rowHeight={44}
@@ -417,7 +421,7 @@ export default function BanManager() {
                             <div className="col-span-4 px-2 py-2">Email</div>
                             <div className="col-span-1 px-2 py-2"></div>
                         </div>
-          
+
                         <VirtualTable
                             items={basketUsers}
                             rowHeight={44}
