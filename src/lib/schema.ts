@@ -250,3 +250,12 @@ export const ban = pgTable(
 );
 
 export type Ban = InferSelectModel<typeof ban>;
+
+export const model = pgTable("Model", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    modelId: varchar("modelId", { length: 250 }).notNull(),
+    name: varchar("name", { length: 250 }).notNull(),
+    description: text("description")
+})
+
+export type Model = InferSelectModel<typeof model>

@@ -8,7 +8,6 @@ import Image from "next/image";
 export default function LoginPage() {
     return (
         <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
-
             {/* ฝั่งซ้าย */}
             <div className="flex items-center justify-center px-6 py-10 lg:px-12">
                 <div className="w-full max-w-md">
@@ -32,8 +31,5 @@ export default function LoginPage() {
                 </p>
             </div>
         </div>
-
-
-
     );
 }
